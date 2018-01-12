@@ -28,6 +28,7 @@ def cat_match_SpARCS0035(septol):
 
     '''
 
+    clustname = 'SpARCS0035'
     (gg_dat, ref_dat) = cat_read_SpARCS0035()
     #print(gg_dat)
 
@@ -38,8 +39,10 @@ def cat_match_SpARCS0035(septol):
     decin = gg_dat['DEC']
     
     #return matched values
-    (rarefm,decrefm,rainm,decinm) = cmt.cat_sky_match(raref, decref, rain, decin, septol, matchfile = 'geomap_coords.SpARCS0035.in')
-    cmt.match_diff_plot(rarefm,decrefm,rainm,decinm)
+    (rarefm,decrefm,rainm,decinm) = cmt.cat_sky_match(raref, decref, rain, decin, septol, matchfile = 'geomap_coords.' + clustname + '.in')
+
+    #make a plot of the residuals
+    cmt.match_diff_plot(rarefm,decrefm,rainm,decinm, plotfile = 'pretrans.' + clustname + '_coordiff.pdf')
 
     
 def cat_read_SpARCS0035():
