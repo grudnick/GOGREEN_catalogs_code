@@ -3,10 +3,12 @@ from astropy.io import ascii
 from astropy.io import fits
 import catalog_match_trans as cmt
 
-#routine to read catalogs
-#rouine to match catalogs and plot result
-#output geomap input file
-#routine to run geomap and transform images
+#routine to read catalogs - done
+#********select only objects with z-band detections
+
+#rouine to match catalogs and plot result - done
+#output geomap input file - done
+#routine to run geomap and transform catalogs
 #routine to match transformed images
 #routine to plot result
 #routine to write output
@@ -39,10 +41,14 @@ def cat_match_SpARCS0035(septol):
     decin = gg_dat['DEC']
     
     #return matched values
-    (rarefm,decrefm,rainm,decinm) = cmt.cat_sky_match(raref, decref, rain, decin, septol, matchfile = 'geomap_coords.' + clustname + '.in')
+    geomap_infile = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/geomap_coords.' + clustname + '.in'
+    (rarefm,decrefm,rainm,decinm, lims) = cmt.cat_sky_match(raref, decref, rain, decin, septol, matchfile = geomap_infile)
+
+    print("limits of coordinates are",lims)
 
     #make a plot of the residuals
-    cmt.match_diff_plot(rarefm,decrefm,rainm,decinm, plotfile = 'pretrans.' + clustname + '_coordiff.pdf')
+    pretrans_plotfile = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/pretrans.' + clustname + '_coordiff.pdf'
+    cmt.match_diff_plot(rarefm,decrefm,rainm,decinm, plotfile = pretrans_plotfile)
 
     
 def cat_read_SpARCS0035():
@@ -53,6 +59,10 @@ def cat_read_SpARCS0035():
 
     gg_hdul = fits.open(catgogreen)
     gg_dat = gg_hdul[1].data
+
+    #select the subset of data with a z-band detection
+    izdet = np.where(gg_dat['zmag'] < 90.)
+    gg_dat = gg_dat[izdet]
 
     refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/SpARCS0035_J1.v0.sexcat'
 
