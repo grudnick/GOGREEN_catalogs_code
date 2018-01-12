@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.io import ascii
 from astropy.io import fits
+import catalog_match_trans as cmt
 
 #routine to read catalogs
 #rouine to match catalogs and plot result
@@ -10,7 +11,7 @@ from astropy.io import fits
 #routine to plot result
 #routine to write output
 
-def cat_match_SpARCS0035():
+def cat_match_SpARCS0035(septol):
 
     '''Written by Gregory Rudnick 10 January 2018
 
@@ -23,20 +24,24 @@ def cat_match_SpARCS0035():
 
     INPUT PARAMETERS:
 
-    raref, decref: the reference coordinates in degrees.  Numpy arrays.
-
-    rain, decin: the input coordinates in degrees.  If performing
-    coordinate transforms, these would be the ones to be transformed.
-    Numpy arrays
-
-    septol: the maximum separation allowed for a match in the native
-    units of the catalog
+    septol: the maximum separation allowed for a match in arcseconds
 
     '''
 
-    (gg_dat, ref_dat) = cat_read_SpARCS0035();
-    print(gg_dat)
+    (gg_dat, ref_dat) = cat_read_SpARCS0035()
+    #print(gg_dat)
 
+    #match catalogs against each other
+    raref = np.array(ref_dat['ALPHA_SKY'])
+    decref = np.array(ref_dat['DELTA_SKY'])
+    rain = gg_dat['RA']
+    decin = gg_dat['DEC']
+    
+    #return matched values
+    (rarefm,decrefm,rainm,decinm) = cmt.cat_sky_match(raref, decref, rain, decin, septol, matchfile = 'geomap_coords.SpARCS0035.in')
+    cmt.match_diff_plot(rarefm,decrefm,rainm,decinm)
+
+    
 def cat_read_SpARCS0035():
 
     #read in catalogs
