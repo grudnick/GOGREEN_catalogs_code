@@ -17,12 +17,24 @@ import os
 #for some reason I can't show the plots interactively and have to just
 #save them.
 
+#match new catalog against original catalog - done
+#plot residuals - done
+
 #**************
-#match new catalog against original catalog
-#plot residuals
+#make regions file for new transformed catalog
 #transform z-band image
 #move generic routines to separte module and keep cluster-specific
 #routines as a file with cluster name
+
+''' 
+Run with
+import preimage_coord_transform_SpARCS0035 as pct
+pct.cat_match_SpARCS0035(septol)
+pct.cat_trans(catgogreen, 'SpARCS0035_geomap.db', './geomap_coords.SpARCS0035.in','./SpARCS0035_J1.v0.cat', 'SpARCS0035', 3.0)
+
+
+
+'''
 
 def cat_match_SpARCS0035(septol):
 
@@ -41,6 +53,7 @@ def cat_match_SpARCS0035(septol):
 
     '''
 
+    #read in the z-band GOGREEN image and the reference data.
     clustname = 'SpARCS0035'
     (gg_dat, ref_dat, gg_catname) = cat_read_SpARCS0035()
     #print(gg_dat)
@@ -63,6 +76,9 @@ def cat_match_SpARCS0035(septol):
     pretrans_plotfile = catpath + '/pretrans.' + clustname + '_coordiff.pdf'
     cmt.match_diff_plot(rarefm,decrefm,rainm,decinm, plotfile = pretrans_plotfile)
 
+    #run geomap to compute the transformation and geoxytran to
+    #transform the input coordinates using that solution.  This also
+    #plots the transformed coordinates.
     georun(clustname, lims)
     
 def georun(clustname, lims):
@@ -92,7 +108,7 @@ def georun(clustname, lims):
         cmdstr = 'rm ' + geotran_outfile
         os.system(cmdstr)
 
-    iraf.geoxytran(geomap_infile, geotran_outfile, dbfile, geomap_infile, direction="backward")
+    iraf.geoxytran(geomap_infile, geotran_outfile, dbfile, geomap_infile, direction="forward")
     
     #read in the geomap input catalog that was transformed using geoxytran.
     trans_ggdat = ascii.read(geotran_outfile)
@@ -106,11 +122,13 @@ def georun(clustname, lims):
     cmt.match_diff_plot(raref,decref,ratrans,dectrans, plotfile = posttrans_plotfile)
 
 
-def cat_trans(incat, dbfile, geomap_infile, refcat, septol):
+def cat_trans(incat, dbfile, geomap_infile, refcat, clustname, septol):
 
     '''This routine reads in a FITS catalog, writes a temporary output
     ASCII catalog, then transforms this catalog using geoxytran.  It
     then appends these new coordinates as new columns to the original catalog.
+
+    It is usually run by hand after the geomap solution has been derived.
 
     INPUT
 
@@ -121,6 +139,8 @@ def cat_trans(incat, dbfile, geomap_infile, refcat, septol):
     geomap_infile: used as the database record
 
     refcat: the original astrometric reference catalog
+
+    clustname: the name of the cluster
 
     septol: the maximum separation allowed for a match in arcseconds
 
@@ -136,10 +156,17 @@ def cat_trans(incat, dbfile, geomap_infile, refcat, septol):
     raref = np.array(ref_dat['ALPHA_SKY'])
     decref = np.array(ref_dat['DELTA_SKY'])
 
+    #tmp coordinate files for geoxytran
     tmpin = 'tmp_geoxytran_in'
     tmpout = 'tmp_geoxytran_out'
+
+    #remove the existing transformed file 
+    newcat = incat.replace('.fits','.trans.fits')
+
     if os.path.isfile(tmpout) is True:
         cmdstr = 'rm ' + tmpout
+        os.system(cmdstr)
+        cmdstr = 'rm ' + newcat
         os.system(cmdstr)
 
     #output temporary ASCII file with coordinates
@@ -151,7 +178,7 @@ def cat_trans(incat, dbfile, geomap_infile, refcat, septol):
         fo.write('{} {}\n'.format(cat_dat['RA'][i],cat_dat['DEC'][i]))
     fo.close()
 
-    iraf.geoxytran(tmpin, tmpout, dbfile, geomap_infile, direction="backward",\
+    iraf.geoxytran(tmpin, tmpout, dbfile, geomap_infile, direction="forward",\
                    xcolumn=1, ycolumn = 2)
 
     #read in ascii output file
@@ -159,8 +186,7 @@ def cat_trans(incat, dbfile, geomap_infile, refcat, septol):
     ratrans = np.array(trans_dat['ra'])
     dectrans = np.array(trans_dat['dec'])
 
-    #replace the old RAs and DECs with new RAs and DECs in place
-    newcat = incat.replace('.fits','.trans.fits')
+    #replace the old RAs and DECs with new RAs and DECs in place    
     tcat_hdul = cat_hdul
     tcat_hdul[1].data['RA'] = ratrans
     tcat_hdul[1].data['DEC'] = dectrans
@@ -172,10 +198,10 @@ def cat_trans(incat, dbfile, geomap_infile, refcat, septol):
     (rarefm,decrefm,ratransm,dectransm, translims) = cmt.cat_sky_match(raref, decref, ratrans, dectrans, septol)
 
     #make a plot of the residuals
-    allcattrans_plotfile = catpath + '/allcat_trans.' + clustname + '_coordiff.pdf'
+    allcattrans_plotfile = 'allcat_trans.' + clustname + '_coordiff.pdf'
     cmt.match_diff_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile)
 
-
+    
 def cat_read_SpARCS0035():
 
     #read in catalogs
