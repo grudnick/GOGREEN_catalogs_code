@@ -239,8 +239,8 @@ def cat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwa
     decref = np.array(ref_dat['DELTA_SKY'])
 
     #tmp coordinate files for geoxytran
-    tmpin = 'tmp_geoxytran_in'
-    tmpout = 'tmp_geoxytran_out'
+    tmpin = 'tmp_geoxytran_sky_in'
+    tmpout = 'tmp_geoxytran_sky_out'
 
     #remove the existing transformed file 
     newcat = incat.replace('.fits','.trans.fits')
@@ -275,7 +275,7 @@ def cat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwa
     tcat_hdul.writeto(newcat)
 
     #match new catalog against original catalog
-    mfile = "allcat_match.txt"
+    mfile = "allcat_sky_match.txt"
     (rarefm,decrefm,ratransm,dectransm, translims) = cmts.cat_sky_match(raref, decref, \
                                                                        ratrans, dectrans, septol, \
                                                                        matchfile = mfile)
