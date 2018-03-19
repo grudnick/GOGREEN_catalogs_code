@@ -43,8 +43,6 @@ import os
 #finish modifying cat_trans to write out transformed coordinates to
 #SEXtractor file and everything after in module
 
-#**************
-
 #make version of catalog_match_sky_trans to catalog_match_im_trans and rename all
 #routines to have im in name.  Make sure they work on x and y-coordinates.
 
@@ -52,9 +50,26 @@ import os
 #y coordinate.  Part of this matches against existing photometric
 #catalog in z-band to get an identical set of coordinates.
 
+# pass file name with reference and input coordinates of three
+# reference points to cmti.cat_im_match.  
+
+#In that code generate files that can be read in by xyxymatch
+
+#run xyxymatch to generate geomap input files
+
+#run geomap on xyxymatch output files.  Change georun_im to take input
+#of xyxyoutput file
+
+
+#figure out why xyxymatch has so few matches by using region files
+
 #test on x and y catalogs 
 
 #transform z-band image
+
+#**************
+
+#transform spectroscopic catalog
 
 #move generic routines to separate module and keep cluster-specific
 #routines as a file with cluster name
@@ -63,8 +78,8 @@ import os
 import preimage_coord_transform_im_SpARCS0035 as pcti
 
 #this matches the input and reference catalog and runs geomap and
-#geoxytran on these catalogspct.cat_match_SpARCS0035(septol, fullcat_trans = 1, im_trans = 1)
-pcts.cat_match_im_SpARCS0035(18.0, fullcat_trans = 1, im_trans = 1)
+#geoxytran on these catalogs
+pcti.cat_match_SpARCS0035(septol, fullcat_trans = 1, im_trans = 1)
 
 
 '''
@@ -94,52 +109,57 @@ def cat_match_im_SpARCS0035(septol, **kwargs):
 
     #read in the z-band GOGREEN catalog and the reference catalog.
     clustname = 'SpARCS0035'
-    (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcat) = cat_read_SpARCS0035()
+    (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcatname, initcoordfile) \
+        = cat_read_SpARCS0035()
     #print(gg_dat)
 
     #rename inputs to make code more readable
     xref = np.array(ref_dat['X_IMAGE'])
     yref = np.array(ref_dat['Y_IMAGE'])
-    xin = gg_dat['X_IMAGE']
-    yin = gg_dat['Y_IMAGE']
+    xin = np.array(zcat_dat['X_IMAGE'])
+    yin = np.array(zcat_dat['Y_IMAGE'])
 
     #match catalogs against each other
     #return matched values
     #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035'
     catpath = '.'
     geomap_infile = catpath + '/geomap_coords_im.' + clustname + '.in'
-    (xrefm,yrefm,xinm,yinm, lims) = cmti.cat_im_match(xref, yref, xin, yin, septol, matchfile = geomap_infile)
+    (xrefm,yrefm,xinm,yinm, lims) \
+        = cmti.cat_im_match(xref, yref, xin, yin, septol, \
+                            icfile = initcoordfile, matchfile = geomap_infile)
 
     print("limits of coordinates are",lims)
 
     #make a plot of the residuals
     pretrans_plotfile = catpath + '/pretrans.' + clustname + '_coordiff_im.pdf'
-    cmti.match_diff_in_plot(xrefm,yrefm,xinm,yinm, plotfile = pretrans_plotfile)
+    cmti.match_diff_im_plot(xrefm,yrefm,xinm,yinm, plotfile = pretrans_plotfile)
 
     #run geomap to compute the transformation and geoxytran to
     #transform the input coordinates using that solution.  This also
     #plots the transformed coordinates.
     (dbfile, geomap_infile) =  georun_im(clustname, lims)
     
-     if 'fullcat_trans' in kwargs.keys():
-         if kwargs['fullcat_trans'] == 1:
-             cat_trans_im(zcat, dbfile, geomap_infile, ref_catname, clustname, septol, \
-                          xmin = lims['xmin'], xmax = lims['xmax'], ymin = lims['ymin'], \
-                          ymax = lims['ymax'])
-
-     #transform image using geotran
-     if 'im_trans' in kwargs.keys():
-         if kwargs['im_trans'] == 1:
-             impath = preimage_read(clustname)
-             imtrans(impath, dbfile,geomap_infile,lims)
+    if 'fullcat_trans' in kwargs.keys():
+        if kwargs['fullcat_trans'] == 1:
+            cat_trans_im(zcatname, dbfile, geomap_infile, ref_catname, clustname, septol, \
+                         xmin = lims['xmin'], xmax = lims['xmax'], ymin = lims['ymin'], \
+                         ymax = lims['ymax'])
             
-def imtrans(impath, dbfile, geomap_infile, lims):
+    #transform image using geotran
+    if 'im_trans' in kwargs.keys():
+        if kwargs['im_trans'] == 1:
+            (impath, refimpath) = preimage_read(clustname)
+            imtrans(impath, refimpath, dbfile,geomap_infile,lims)
+            
+def imtrans(impath, refimpath, dbfile, geomap_infile, lims):
 
     '''Run geotran on an image
 
     INPUT:
 
-    impath : the full path to the image
+    impath : the full path to the image to be transformed
+
+    refimpath : the full path to the reference image
 
     dbfile: the geomap database file
     
@@ -151,7 +171,16 @@ def imtrans(impath, dbfile, geomap_infile, lims):
 
     '''
 
-    iraf.geotran(impath, './test.fits', dbfile, geomap_infile)
+    #find the x and y limits of the reference image
+    refim = fits.open(refimpath)
+    xmax = refim[0].header['NAXIS1']
+    ymax = refim[0].header['NAXIS2']
+    xmin = 1
+    ymin = 1
+    refim.close()
+    
+    iraf.geotran(impath, './test.fits', dbfile, geomap_infile, xmin = xmin, xmax = xmax, \
+                 ymin = ymin, ymax = ymax, xscale = 1.0, yscale = 1.0)
             
 def georun_im(clustname, lims):
 
@@ -188,7 +217,7 @@ def georun_im(clustname, lims):
     xtrans = trans_ggdat['xin']
     ytrans = trans_ggdat['yin']
     xref = trans_ggdat['xref']
-    tref = trans_ggdat['yref']
+    yref = trans_ggdat['yref']
 
     #make a plot of the new residuals
     posttrans_plotfile = catpath + '/posttrans.' + clustname + '_coordiff_im.pdf'
@@ -200,7 +229,7 @@ def georun_im(clustname, lims):
     
 #    cat_trans_sky('/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0035/SPARCS0035_phot_v2.0_USE.fits', 'SpARCS0035_geomap.db', './geomap_coords.SpARCS0035.in','./SpARCS0035_J1.v0.cat', 'SpARCS0035', 3.0)
 
-def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwargs):
+def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol,  **kwargs):
 
     '''This routine reads in a FITS catalog, writes a temporary output
     ASCII catalog, then transforms this catalog using geoxytran.  It
@@ -243,7 +272,7 @@ def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwar
     tmpin = 'tmp_geoxytran_im_in'
     tmpout = 'tmp_geoxytran_im_out'
 
-    #remove the existing transformed file 
+    #make a new name for the transformed file
     newcat = incat.replace('.sexcat','.trans.cat')
 
     if os.path.isfile(tmpout) is True:
@@ -277,22 +306,22 @@ def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwar
     
     #match new catalog against original catalog
     mfile = "allcat_im_match.txt"
-    (xrefm,yrefm,xtransm,ytransm, translims) = cmts.cat_im_match(xref, yref, \
+    (xrefm,yrefm,xtransm,ytransm, translims) = cmti.cat_im_match(xref, yref, \
                                                                  xtrans, ytrans, septol, \
                                                                  matchfile = mfile)
 
     #make a plot of the residuals
     allcattrans_plotfile = 'allcat_trans.' + clustname + '_coordiff_im.pdf'
     #passes ra and dec limits if they are defined to find source
-    #outside of ra and dec lims.  Assumes that if one keyword is given
+    #outside of ra and dec lims.  Assumes that if one keyword is givenSpARCS0035_GMOS_z.v0.sexcat'
     #that all are given
     
     if 'xmin' in kwargs.keys():
-        cmts.match_diff_im_plot(xrefm,yrefm,xtransm,ytransm, plotfile = allcattrans_plotfile, \
+        cmti.match_diff_im_plot(xrefm,yrefm,xtransm,ytransm, plotfile = allcattrans_plotfile, \
                             xmin = kwargs['xmin'], xmax = kwargs['xmax'], \
                             ymin = kwargs['ymin'], ymax = kwargs['ymax'])
     else:
-        cmts.match_diff_im_plot(xrefm,yrefm,xtransm,ytransm, plotfile = allcattrans_plotfile)
+        cmti.match_diff_im_plot(xrefm,yrefm,xtransm,ytransm, plotfile = allcattrans_plotfile)
 
     
 def cat_read_SpARCS0035():
@@ -317,8 +346,11 @@ def cat_read_SpARCS0035():
 
     ref_dat = ascii.read(refcat)
 
+    #file with coordinates of three objects in the input and reference image
+    initcoordfile = 'SpARCS0035_initref.coord.txt'
 
-    return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat;
+
+    return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat, initcoordfile;
 
 def preimage_read(clustname):
 
@@ -346,4 +378,7 @@ def preimage_read(clustname):
     imname = imroot + '.fits[1]'
     impath = imdir + imname
 
-    return impath
+    #also get the path of the FOURSTAR reference image
+    refimpath = '/Users/grudnick/Work/GOGREEN/Data/Imaging/Fourstar/Reduced/Sep2016/SpARCS0035_J1_v02_ipe.fits'
+    
+    return impath,refimpath
