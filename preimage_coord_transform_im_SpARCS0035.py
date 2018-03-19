@@ -178,8 +178,10 @@ def imtrans(impath, refimpath, dbfile, geomap_infile, lims):
     xmin = 1
     ymin = 1
     refim.close()
-    
-    iraf.geotran(impath, './test.fits', dbfile, geomap_infile, xmin = xmin, xmax = xmax, \
+
+    outpath = impath.replace('.fits[1]','.trans.fits')
+
+    iraf.geotran(impath, outpath, dbfile, geomap_infile, xmin = xmin, xmax = xmax, \
                  ymin = ymin, ymax = ymax, xscale = 1.0, yscale = 1.0)
             
 def georun_im(clustname, lims):
