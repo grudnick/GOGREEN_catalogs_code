@@ -85,14 +85,13 @@ def cat_match_sky_SpARCS0035(septol, **kwargs):
 
     fullcat_trans:  if set ==1 then transform full catalog
 
-    ######im_trans: if set==1 then transform image using geotran
-
+    speczcat_trans:  if set ==1 then transform the spectroscopic catalog
 
     '''
 
     #read in the z-band GOGREEN catalog and the reference catalog.
     clustname = 'SpARCS0035'
-    (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcat) = cat_read_SpARCS0035()
+    (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcat, speczcatname) = cat_read_SpARCS0035()
     #print(gg_dat)
 
     #rename inputs to make code more readable
@@ -122,6 +121,12 @@ def cat_match_sky_SpARCS0035(septol, **kwargs):
     if 'fullcat_trans' in kwargs.keys():
         if kwargs['fullcat_trans'] == 1:
             cat_trans_sky(gg_catname, dbfile, geomap_infile, ref_catname, clustname, septol, \
+                      ramin = lims['ramin'], ramax = lims['ramax'], decmin = lims['decmin'], \
+                      decmax = lims['decmax'])
+
+    if 'speczcat_trans' in kwargs.keys():
+        if kwargs['speczcat_trans'] == 1:
+            speczcat_trans_sky(speczcatname, dbfile, geomap_infile, ref_catname, clustname, septol, \
                       ramin = lims['ramin'], ramax = lims['ramax'], decmin = lims['decmin'], \
                       decmax = lims['decmax'])
 
@@ -292,6 +297,101 @@ def cat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwa
     else:
         cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile)
 
+def speczcat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwargs):
+
+    '''This routine reads in a FITS catalog, writes a temporary output
+    ASCII catalog, then transforms this catalog using geoxytran.  It
+    then writes a new catalog with  old coordinates replaced by the new ones.
+
+    INPUT
+
+    incat: the input fits catalog
+
+    dbfile: the geomap database file
+
+    geomap_infile: used as the database record
+
+    refcat: the original astrometric reference catalog
+
+    clustname: the name of the cluster
+
+    septol: the maximum separation allowed for a match in arcseconds
+
+    OPTIONAL KEYWORDS
+
+    ramin, ramax, decmin, decmax.  These are the limits over which the
+    transform was originally computed.  If these are given then it
+    uses those limits to color the points in the ra and decdiff plots.
+    If one is given, all must be given.
+
+    '''
+
+    #read in the spectroscopic redshift catalog
+    cat_hdul = fits.open(incat)
+    cat_dat = cat_hdul["MDF"].data
+
+    #read in original astrometric catalog
+    ref_dat = ascii.read(refcat)
+    raref = np.array(ref_dat['ALPHA_SKY'])
+    decref = np.array(ref_dat['DELTA_SKY'])
+
+    #tmp coordinate files for geoxytran
+    tmpin = 'tmp_geoxytran_sky_in'
+    tmpout = 'tmp_geoxytran_sky_out'
+
+    #remove the existing transformed file 
+    newcat = incat.replace('.fits','.trans.fits')
+
+    if os.path.isfile(tmpout) is True:
+        cmdstr = 'rm ' + tmpout
+        os.system(cmdstr)
+        cmdstr = 'rm ' + newcat
+        os.system(cmdstr)
+
+    
+    #output temporary ASCII file with coordinates
+    fo = open(tmpin, "w")
+    fo.write("# ra dec\n")
+    for i,val in enumerate(cat_dat['RA']):
+        #convert speczcat RA to degrees when writing out
+        fo.write('{} {}\n'.format(cat_dat['RA'][i] * 15.0 ,cat_dat['DEC'][i]))
+    fo.close()
+
+    iraf.geoxytran(tmpin, tmpout, dbfile, geomap_infile, direction="backward",\
+                   xcolumn=1, ycolumn = 2)
+
+    #read in ascii output file
+    trans_dat = ascii.read(tmpout)
+    ratrans = np.array(trans_dat['ra'])
+    dectrans = np.array(trans_dat['dec'])
+    
+    #replace the old RAs and DECs with new RAs and DECs in place    
+    tcat_hdul = cat_hdul
+    #convert RA back to hours for output
+    tcat_hdul["MDF"].data['RA'] = ratrans / 15.0
+    tcat_hdul["MDF"].data['DEC'] = dectrans / 15.0
+    
+    #write the new fits file
+    tcat_hdul.writeto(newcat)
+
+    #match new catalog against original catalog
+    mfile = "speczcat_sky_match.txt"
+    (rarefm,decrefm,ratransm,dectransm, translims) = cmts.cat_sky_match(raref, decref, \
+                                                                       ratrans, dectrans, septol, \
+                                                                       matchfile = mfile)
+
+    #make a plot of the residuals
+    allcattrans_plotfile = 'speczcat_trans.' + clustname + '_coordiff_sky.pdf'
+    #passes ra and dec limits if they are defined to find source
+    #outside of ra and dec lims.  Assumes that if one keyword is given
+    #that all are given
+    if 'ramin' in kwargs.keys():
+        cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile, \
+                            ramin = kwargs['ramin'], ramax = kwargs['ramax'], \
+                            decmin = kwargs['decmin'], decmax = kwargs['decmax'])
+    else:
+        cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile)
+
     
 def cat_read_SpARCS0035():
 
@@ -315,8 +415,11 @@ def cat_read_SpARCS0035():
 
     ref_dat = ascii.read(refcat)
 
+    #read the catalog spectroscopic redshifts
+    speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SpARCS0035_final.fits"
+    #speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SpARCS0035_oned.fits"
 
-    return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat;
+    return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat, speczcat;
 
 # def preimage_read(clustname):
 
