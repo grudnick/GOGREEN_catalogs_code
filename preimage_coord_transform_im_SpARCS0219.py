@@ -75,16 +75,16 @@ import os
 #routines as a file with cluster name
 
 '''Run with
-import preimage_coord_transform_im_SpARCS0035 as pcti
+import preimage_coord_transform_im_SpARCS0219 as pcti
 
 #this matches the input and reference catalog and runs geomap and
 #geoxytran on these catalogs
-pcti.cat_match_SpARCS0035(septol, fullcat_trans = 1, im_trans = 1)
+pcti.cat_match_SpARCS0219(septol, fullcat_trans = 1, im_trans = 1)
 
 
 '''
 
-def cat_match_im_SpARCS0035(septol, **kwargs):
+def cat_match_im_SpARCS0219(septol, **kwargs):
 
     '''Written by Gregory Rudnick 10 January 2018
 
@@ -108,9 +108,9 @@ def cat_match_im_SpARCS0035(septol, **kwargs):
     '''
 
     #read in the z-band GOGREEN catalog and the reference catalog.
-    clustname = 'SpARCS0035'
+    clustname = 'SpARCS0219'
     (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcatname, initcoordfile) \
-        = cat_read_SpARCS0035()
+        = cat_read_SpARCS0219()
     #print(gg_dat)
 
     #rename inputs to make code more readable
@@ -121,7 +121,7 @@ def cat_match_im_SpARCS0035(septol, **kwargs):
 
     #match catalogs against each other
     #return matched values
-    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035'
+    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0219'
     catpath = '.'
     geomap_infile = catpath + '/geomap_coords_im.' + clustname + '.in'
     (xrefm,yrefm,xinm,yinm, lims) \
@@ -227,9 +227,6 @@ def georun_im(clustname, lims):
 
     return dbfile, geomap_infile
 
-#def cat_trans_sky_run():
-    
-#    cat_trans_sky('/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0035/SPARCS0035_phot_v2.0_USE.fits', 'SpARCS0035_geomap.db', './geomap_coords.SpARCS0035.in','./SpARCS0035_J1.v0.cat', 'SpARCS0035', 3.0)
 
 def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol,  **kwargs):
 
@@ -315,7 +312,7 @@ def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol,  **kwa
     #make a plot of the residuals
     allcattrans_plotfile = 'allcat_trans.' + clustname + '_coordiff_im.pdf'
     #passes ra and dec limits if they are defined to find source
-    #outside of ra and dec lims.  Assumes that if one keyword is givenSpARCS0035_GMOS_z.v0.sexcat'
+    #outside of ra and dec lims.  Assumes that if one keyword is givenSpARCS0219_GMOS_z.v0.sexcat'
     #that all are given
     
     if 'xmin' in kwargs.keys():
@@ -326,30 +323,30 @@ def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol,  **kwa
         cmti.match_diff_im_plot(xrefm,yrefm,xtransm,ytransm, plotfile = allcattrans_plotfile)
 
     
-def cat_read_SpARCS0035():
+def cat_read_SpARCS0219():
 
     #read in catalogs
 
     #official GOGREEN imaging catalog
-    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0035/SPARCS0035_phot_v2.0_USE.fits'
+    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0219/SPARCS0219_phot_v2.1_USE.fits'
 
     gg_hdul = fits.open(catgogreen)
     gg_dat = gg_hdul[1].data
 
     #read in z-band image with x and y coordinates
-    zcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/SpARCS0035_GMOS_z.v0.sexcat'
+    zcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0219/SpARCS0219_GMOS_z.v0.sexcat'
     zcat_dat = ascii.read(zcat)
     
     #select the subset of data with a z-band detection
     izdet = np.where(gg_dat['zmag'] < 90.)
     gg_dat = gg_dat[izdet]
 
-    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/SpARCS0035_J1.v0.sexcat'
+    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0219/SpARCS0219_J.v0.sexcat'
 
     ref_dat = ascii.read(refcat)
 
     #file with coordinates of three objects in the input and reference image
-    initcoordfile = 'SpARCS0035_initref.coord.txt'
+    initcoordfile = 'SpARCS0219_initref.coord.txt'
 
 
     return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat, initcoordfile;
@@ -381,6 +378,6 @@ def preimage_read(clustname):
     impath = imdir + imname
 
     #also get the path of the FOURSTAR reference image
-    refimpath = '/Users/grudnick/Work/GOGREEN/Data/Imaging/Fourstar/Reduced/Sep2016/SpARCS0035_J1_v02_ipe.fits'
+    refimpath = '/Users/grudnick/Work/GOGREEN/Data/Imaging/Fourstar/Reduced/Sep2016/SpARCS0219_20160910_J_v02_ipe.fits'
     
     return impath,refimpath
