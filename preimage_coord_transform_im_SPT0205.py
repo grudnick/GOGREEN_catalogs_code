@@ -75,16 +75,16 @@ import os
 #routines as a file with cluster name
 
 '''Run with
-import preimage_coord_transform_im_SPT0546 as pcti
+import preimage_coord_transform_im_SPT0205 as pcti
 
 #this matches the input and reference catalog and runs geomap and
 #geoxytran on these catalogs
-pcti.cat_match_SPT0546(septol, fullcat_trans = 1, im_trans = 1)
+pcti.cat_match_SPT0205(septol, fullcat_trans = 1, im_trans = 1)
 
 
 '''
 
-def cat_match_im_SPT0546(septol, **kwargs):
+def cat_match_im_SPT0205(septol, **kwargs):
 
     '''Written by Gregory Rudnick 10 January 2018
 
@@ -108,9 +108,9 @@ def cat_match_im_SPT0546(septol, **kwargs):
     '''
 
     #read in the z-band GOGREEN catalog and the reference catalog.
-    clustname = 'SPT0546'
+    clustname = 'SPT0205'
     (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcatname, initcoordfile) \
-        = cat_read_SPT0546()
+        = cat_read_SPT0205()
     #print(gg_dat)
 
     #rename inputs to make code more readable
@@ -121,7 +121,7 @@ def cat_match_im_SPT0546(septol, **kwargs):
 
     #match catalogs against each other
     #return matched values
-    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0546'
+    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0205'
     catpath = '.'
     geomap_infile = catpath + '/geomap_coords_im.' + clustname + '.in'
     (xrefm,yrefm,xinm,yinm, lims) \
@@ -312,7 +312,7 @@ def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol,  **kwa
     #make a plot of the residuals
     allcattrans_plotfile = 'allcat_trans.' + clustname + '_coordiff_im.pdf'
     #passes ra and dec limits if they are defined to find source
-    #outside of ra and dec lims.  Assumes that if one keyword is givenSPT0546_GMOS_z.v0.sexcat'
+    #outside of ra and dec lims.  Assumes that if one keyword is givenSPT0205_GMOS_z.v0.sexcat'
     #that all are given
     
     if 'xmin' in kwargs.keys():
@@ -323,30 +323,30 @@ def cat_trans_im(incat, dbfile, geomap_infile, refcat, clustname, septol,  **kwa
         cmti.match_diff_im_plot(xrefm,yrefm,xtransm,ytransm, plotfile = allcattrans_plotfile)
 
     
-def cat_read_SPT0546():
+def cat_read_SPT0205():
 
     #read in catalogs
 
     #official GOGREEN imaging catalog
-    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SPT0546/SPT0546_phot_v1.4.fits'
+    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SPT0205/SPT0205_phot_v1.5.fits'
 
     gg_hdul = fits.open(catgogreen)
     gg_dat = gg_hdul[1].data
 
     #read in z-band image with x and y coordinates
-    zcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0546/SPT0546_GMOS_z.v0.sexcat'
+    zcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0205/SPT0205_GMOS_z.v0.sexcat'
     zcat_dat = ascii.read(zcat)
     
     #select the subset of data with a z-band detection
     izdet = np.where(gg_dat['zmag'] < 90.)
     gg_dat = gg_dat[izdet]
 
-    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0546/SPT0546_J.v0.sexcat'
+    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0205/SPT0205_J.v0.sexcat'
 
     ref_dat = ascii.read(refcat)
 
     #file with coordinates of three objects in the input and reference image
-    initcoordfile = 'SPT0546_initref.coord.txt'
+    initcoordfile = 'SPT0205_initref.coord.txt'
 
 
     return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat, initcoordfile;
@@ -378,6 +378,6 @@ def preimage_read(clustname):
     impath = imdir + imname
 
     #also get the path of the FOURSTAR reference image
-    refimpath = '/Users/grudnick/Work/GOGREEN/Data/Imaging/Fourstar/Reduced/Sep2016/SPT0546_20160910_J_v02_ipe.fits'
+    refimpath = '/Users/grudnick/Work/GOGREEN/Data/Imaging/Fourstar/Reduced/Sep2016/SPT0205_20160911_J_v02_ipe.fits'
     
     return impath,refimpath
