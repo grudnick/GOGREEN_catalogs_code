@@ -130,15 +130,18 @@ def cat_match_im_SpARCS0219(septol, **kwargs):
 
     print("limits of coordinates are",lims)
 
-    #make a plot of the residuals
-    pretrans_plotfile = catpath + '/pretrans.' + clustname + '_coordiff_im.pdf'
-    cmti.match_diff_im_plot(xrefm,yrefm,xinm,yinm, plotfile = pretrans_plotfile)
-
     #run geomap to compute the transformation and geoxytran to
     #transform the input coordinates using that solution.  This also
     #plots the transformed coordinates.
     (dbfile, geomap_infile) =  georun_im(clustname, lims)
     
+    #make a plot of the residuals.  Although these are for the
+    #pre-transform residuals, this needs to occur in the code before
+    #the first instance of geomap, otherwise for some reason the code
+    #crashes because pytplot is imported before geomap is executed.
+    pretrans_plotfile = catpath + '/pretrans.' + clustname + '_coordiff_im.pdf'
+    cmti.match_diff_im_plot(xrefm,yrefm,xinm,yinm, plotfile = pretrans_plotfile)
+
     if 'fullcat_trans' in kwargs.keys():
         if kwargs['fullcat_trans'] == 1:
             cat_trans_im(zcatname, dbfile, geomap_infile, ref_catname, clustname, septol, \

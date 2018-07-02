@@ -57,16 +57,16 @@ import os
 #routines as a file with cluster name
 
 '''Run with
-import preimage_coord_transform_sky_SpARCS0035 as pcts
+import preimage_coord_transform_sky_SPT0546 as pcts
 
 #this matches the input and reference catalog and runs geomap and
-#geoxytran on these catalogspct.cat_match_SpARCS0035(septol, fullcat_trans = 1)
-pcts.cat_match_sky_SpARCS0035(3.0, fullcat_trans = 1)
+#geoxytran on these catalogspct.cat_match_SPT0546(septol, fullcat_trans = 1)
+pcts.cat_match_sky_SPT0546(3.0, fullcat_trans = 1)
 
 
 '''
 
-def cat_match_sky_SpARCS0035(septol, **kwargs):
+def cat_match_sky_SPT0546(septol, **kwargs):
 
     '''Written by Gregory Rudnick 10 January 2018
 
@@ -90,8 +90,8 @@ def cat_match_sky_SpARCS0035(septol, **kwargs):
     '''
 
     #read in the z-band GOGREEN catalog and the reference catalog.
-    clustname = 'SpARCS0035'
-    (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcat, speczcatname) = cat_read_SpARCS0035()
+    clustname = 'SPT0546'
+    (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcat, speczcatname) = cat_read_SPT0546()
     #print(gg_dat)
 
     #rename inputs to make code more readable
@@ -102,7 +102,7 @@ def cat_match_sky_SpARCS0035(septol, **kwargs):
 
     #match catalogs against each other
     #return matched values
-    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035'
+    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0546'
     catpath = '.'
     geomap_infile = catpath + '/geomap_coords_sky.' + clustname + '.in'
     (rarefm,decrefm,rainm,decinm, lims) = cmts.cat_sky_match(raref, decref, rain, decin, septol, matchfile = geomap_infile)
@@ -204,7 +204,7 @@ def georun_sky(clustname, lims):
 
 #def cat_trans_sky_run():
     
-#    cat_trans_sky('/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0035/SPARCS0035_phot_v2.0_USE.fits', 'SpARCS0035_geomap.db', './geomap_coords.SpARCS0035.in','./SpARCS0035_J1.v0.cat', 'SpARCS0035', 3.0)
+#    cat_trans_sky('/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SPT0546/SPARCS0219_phot_v2.0_USE.fits', 'SPT0546_geomap.db', './geomap_coords.SPT0546.in','./SPT0546_J1.v0.cat', 'SPT0546', 3.0)
 
 def cat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwargs):
 
@@ -396,31 +396,31 @@ def speczcat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, 
         cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile)
 
     
-def cat_read_SpARCS0035():
+def cat_read_SPT0546():
 
     #read in catalogs
 
     #official GOGREEN imaging catalog
-    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0035/SPARCS0035_phot_v2.0_USE.fits'
+    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SPT0546/SPT0546_phot_v1.4.fits'
 
     gg_hdul = fits.open(catgogreen)
     gg_dat = gg_hdul[1].data
 
     #read in z-band image with x and y coordinates
-    zcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/SpARCS0035_GMOS_z.v0.sexcat'
+    zcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0546/SPT0546_GMOS_z.v0.sexcat'
     zcat_dat = ascii.read(zcat)
     
     #select the subset of data with a z-band detection
     izdet = np.where(gg_dat['zmag'] < 90.)
     gg_dat = gg_dat[izdet]
 
-    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/SpARCS0035_J1.v0.sexcat'
+    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SPT0546/SPT0546_J.v0.sexcat'
 
     ref_dat = ascii.read(refcat)
 
     #read the catalog spectroscopic redshifts
-    speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SpARCS0035_final.fits"
-    #speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SpARCS0035_oned.fits"
+    speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SPT0546_final.fits"
+    #speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SPT0546_oned.fits"
 
     return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat, speczcat;
 

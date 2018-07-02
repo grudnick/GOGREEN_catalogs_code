@@ -1,72 +1,25 @@
 import numpy as np
 from astropy.io import ascii
 from astropy.io import fits
+#import matplotlib.pyplot as plt
 import catalog_match_sky_trans as cmts
 from pyraf import iraf
+from astropy.io.votable import parse   
 import os
 
-#routine to read catalogs - done
-#rouine to match catalogs and plot result - done
-#output geomap input file - done
-#routine to run geomap and transform catalogs  - done
-      
-#routine to match transformed catalogs - done
-#routine to plot result - done
-#routine to write transform full photometric catalog. - done
-
-#for some reason I can't show the plots interactively and have to just
-#save them.
-
-#match new catalog against original catalog - done
-#plot residuals - done
-
-#Modify the geoxytran calls to indicate the column number of the input file
-#figure out whether I should be transforming "forward" or "backward"
-#make x-y plot file for new transformed catalog to see where the
-#poorly transformed galaxies are
-
-#make x and y coordinate catalog for z-band image 
-
-#rename all functions in preimage_coord_transform_<clust> to have "sky" in the name
-
-#rename catalog_match_trans to catalog_match_sky_trans and rename all
-#routines to have sky in name
-
-#go through new preimage_coord_transform_sky_<clust> and change cmt
-#routines to have "sky" in name
-
-#check that code works
-#**************
-
-#make version of catalog_match_sky_trans to catalog_match_im_trans and rename all
-#routines to have im in name.  Make sure they work on x and y-coordinates.
-
-#make new modules that transform image called
-#preimage_coord_transform_im_<clust>.py and do everything in x and y
-#coordinates
-
-#write cat_im_match (version of cat_sky_match) with lims in x and
-#y coordinate.  Part of this matches against existing photometric
-#catalog in z-band to get an identical set of coordinates.
-
-#test on x and y catalogs 
-
-#transform z-band image
-
-#move generic routines to separate module and keep cluster-specific
-#routines as a file with cluster name
 
 '''Run with
-import preimage_coord_transform_sky_SpARCS0035 as pcts
+import preimage_coord_transform_sky_SpARCS1033 as pcts
 
 #this matches the input and reference catalog and runs geomap and
-#geoxytran on these catalogspct.cat_match_SpARCS0035(septol, fullcat_trans = 1)
-pcts.cat_match_sky_SpARCS0035(3.0, fullcat_trans = 1)
+#geoxytran on these catalogspct.cat_match_SpARCS1033(septol, fullcat_trans = 1)
+pcts.cat_match_sky_SpARCS1033(3.0, fullcat_trans = 1)
 
 
 '''
 
-def cat_match_sky_SpARCS0035(septol, **kwargs):
+#main program#
+def cat_match_sky_SpARCS1033(septol, **kwargs):
 
     '''Written by Gregory Rudnick 10 January 2018
 
@@ -90,19 +43,19 @@ def cat_match_sky_SpARCS0035(septol, **kwargs):
     '''
 
     #read in the z-band GOGREEN catalog and the reference catalog.
-    clustname = 'SpARCS0035'
-    (gg_dat, ref_dat, gg_catname, ref_catname, zcat_dat, zcat, speczcatname) = cat_read_SpARCS0035()
+    clustname = 'SpARCS1033'
+    (gg_dat, ref_dat, gg_catname, ref_catname, speczcatname) = cat_read_SpARCS1033()
     #print(gg_dat)
 
     #rename inputs to make code more readable
-    raref = np.array(ref_dat['ALPHA_SKY'])
-    decref = np.array(ref_dat['DELTA_SKY'])
+    raref = np.array(ref_dat['RA_ICRS'])
+    decref = np.array(ref_dat['DE_ICRS'])
     rain = gg_dat['RA']
     decin = gg_dat['DEC']
 
     #match catalogs against each other
     #return matched values
-    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035'
+    #catpath = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS1033'
     catpath = '.'
     geomap_infile = catpath + '/geomap_coords_sky.' + clustname + '.in'
     (rarefm,decrefm,rainm,decinm, lims) = cmts.cat_sky_match(raref, decref, rain, decin, septol, matchfile = geomap_infile)
@@ -113,11 +66,14 @@ def cat_match_sky_SpARCS0035(septol, **kwargs):
     #transform the input coordinates using that solution.  This also
     #plots the transformed coordinates.
     (dbfile, geomap_infile) =  georun_sky(clustname, lims)
+
+    #I'm putting the import statement here as it seems I need to
+    #import pyraf and run geomap before I run pyplot routines,
+    #otherwise the code crashes.
+    #import matplotlib.pyplot as plt
+
     
-    #make a plot of the residuals.  Although these are for the
-    #pre-transform residuals, this needs to occur in the code before
-    #the first instance of geomap, otherwise for some reason the code
-    #crashes because pytplot is imported before geomap is executed.
+    #make a plot of the residuals
     pretrans_plotfile = catpath + '/pretrans.' + clustname + '_coordiff_sky.pdf'
     cmts.match_diff_sky_plot(rarefm,decrefm,rainm,decinm, plotfile = pretrans_plotfile)
 
@@ -132,32 +88,6 @@ def cat_match_sky_SpARCS0035(septol, **kwargs):
             speczcat_trans_sky(speczcatname, dbfile, geomap_infile, ref_catname, clustname, septol, \
                       ramin = lims['ramin'], ramax = lims['ramax'], decmin = lims['decmin'], \
                       decmax = lims['decmax'])
-
-#     #transform image using geotran
-#     if 'im_trans' in kwargs.keys():
-#         if kwargs['im_trans'] == 1:
-#             impath = preimage_read(clustname)
-#             imtrans(impath, dbfile,geomap_infile,lims)
-            
-# def imtrans(impath, dbfile, geomap_infile, lims):
-
-#     '''Run geotran on an image
-
-#     INPUT:
-
-#     impath : the full path to the image
-
-#     dbfile: the geomap database file
-    
-#     geomap_infile: the name of the input coordinate file for the
-#     geomap transformation, which is used as the record identifier for
-#     the transfor
-
-#     lims: a dictionary that defines the minimum and maximum 
-
-#     '''
-
-#     iraf.geotran(impath, './test.fits', dbfile, geomap_infile)
             
 def georun_sky(clustname, lims):
 
@@ -204,7 +134,7 @@ def georun_sky(clustname, lims):
 
 #def cat_trans_sky_run():
     
-#    cat_trans_sky('/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0035/SPARCS0035_phot_v2.0_USE.fits', 'SpARCS0035_geomap.db', './geomap_coords.SpARCS0035.in','./SpARCS0035_J1.v0.cat', 'SpARCS0035', 3.0)
+#    cat_trans_sky('/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS1033/SPARCS0219_phot_v2.0_USE.fits', 'SpARCS1033_geomap.db', './geomap_coords.SpARCS1033.in','./SpARCS1033_J1.v0.cat', 'SpARCS1033', 3.0)
 
 def cat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwargs):
 
@@ -242,9 +172,17 @@ def cat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, **kwa
     cat_dat = cat_hdul[1].data
 
     #read in original astrometric catalog
-    ref_dat = ascii.read(refcat)
-    raref = np.array(ref_dat['ALPHA_SKY'])
-    decref = np.array(ref_dat['DELTA_SKY'])
+    #assume that this is a GAIA VOTable
+    votable = parse(refcat)
+    table = votable.get_first_table()
+    ref_dat = table.array
+    #convert masked arrays to normal arrays
+    raref = np.array(ref_dat['RA_ICRS'])
+    decref = np.array(ref_dat['DE_ICRS'])
+    
+    #ref_dat = ascii.read(refcat)
+    #raref = np.array(ref_dat['RA'])
+    #decref = np.array(ref_dat['DEC'])
 
     #tmp coordinate files for geoxytran
     tmpin = 'tmp_geoxytran_sky_in'
@@ -334,9 +272,17 @@ def speczcat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, 
     cat_dat = cat_hdul["MDF"].data
 
     #read in original astrometric catalog
-    ref_dat = ascii.read(refcat)
-    raref = np.array(ref_dat['ALPHA_SKY'])
-    decref = np.array(ref_dat['DELTA_SKY'])
+    #assume that this is a GAIA VOTable
+    votable = parse(refcat)
+    table = votable.get_first_table()
+    ref_dat = table.array
+    #convert masked arrays to normal arrays
+    raref = np.array(ref_dat['RA_ICRS'])
+    decref = np.array(ref_dat['DE_ICRS'])
+
+    #ref_dat = ascii.read(refcat)
+    #raref = np.array(ref_dat['ALPHA_SKY'])
+    #decref = np.array(ref_dat['DELTA_SKY'])
 
     #tmp coordinate files for geoxytran
     tmpin = 'tmp_geoxytran_sky_in'
@@ -377,77 +323,53 @@ def speczcat_trans_sky(incat, dbfile, geomap_infile, refcat, clustname, septol, 
     #write the new fits file
     tcat_hdul.writeto(newcat)
 
-    #match new catalog against original catalog
-    mfile = "speczcat_sky_match.txt"
-    (rarefm,decrefm,ratransm,dectransm, translims) = cmts.cat_sky_match(raref, decref, \
-                                                                       ratrans, dectrans, septol, \
-                                                                       matchfile = mfile)
+    #I commented this out for the GAIA catalog as the spetroscopic
+    #catalog will have no matches with GAIA
+    
+    # #match new catalog against original catalog
+    # mfile = "speczcat_sky_match.txt"
+    # (rarefm,decrefm,ratransm,dectransm, translims) = cmts.cat_sky_match(raref, decref, \
+    #                                                                    ratrans, dectrans, septol, \
+    #                                                                    matchfile = mfile)
 
-    #make a plot of the residuals
-    allcattrans_plotfile = 'speczcat_trans.' + clustname + '_coordiff_sky.pdf'
-    #passes ra and dec limits if they are defined to find source
-    #outside of ra and dec lims.  Assumes that if one keyword is given
-    #that all are given
-    if 'ramin' in kwargs.keys():
-        cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile, \
-                            ramin = kwargs['ramin'], ramax = kwargs['ramax'], \
-                            decmin = kwargs['decmin'], decmax = kwargs['decmax'])
-    else:
-        cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile)
+    # #make a plot of the residuals
+    # allcattrans_plotfile = 'speczcat_trans.' + clustname + '_coordiff_sky.pdf'
+    # #passes ra and dec limits if they are defined to find source
+    # #outside of ra and dec lims.  Assumes that if one keyword is given
+    # #that all are given
+    # if 'ramin' in kwargs.keys():
+    #     cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile, \
+    #                         ramin = kwargs['ramin'], ramax = kwargs['ramax'], \
+    #                         decmin = kwargs['decmin'], decmax = kwargs['decmax'])
+    # else:
+    #     cmts.match_diff_sky_plot(rarefm,decrefm,ratransm,dectransm, plotfile = allcattrans_plotfile)
 
     
-def cat_read_SpARCS0035():
+def cat_read_SpARCS1033():
 
     #read in catalogs
 
     #official GOGREEN imaging catalog
-    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS0035/SPARCS0035_phot_v2.0_USE.fits'
+    catgogreen = '/Users/grudnick/Work/GOGREEN/Catalogs/Preimaging/SpARCS1033/SPARCS1033_zband_IRAC_v1_handcheck_cat.fits'
 
     gg_hdul = fits.open(catgogreen)
     gg_dat = gg_hdul[1].data
-
-    #read in z-band image with x and y coordinates
-    zcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/SpARCS0035_GMOS_z.v0.sexcat'
-    zcat_dat = ascii.read(zcat)
     
     #select the subset of data with a z-band detection
     izdet = np.where(gg_dat['zmag'] < 90.)
     gg_dat = gg_dat[izdet]
 
-    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS0035/SpARCS0035_J1.v0.sexcat'
+    #refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/SpARCS1033/SpARCS1033_J.v0.sexcat' 
+    #ref_dat = ascii.read(refcat)
 
-    ref_dat = ascii.read(refcat)
+    #this is a GAIA reference catalog
+    refcat = '/Users/grudnick/Work/GOGREEN/Catalogs/Astrometric/GOGREEN_GAIA/sparcs1033_gaia_votable.xml'
+    votable = parse(refcat)
+    table = votable.get_first_table()
+    ref_dat = table.array
 
     #read the catalog spectroscopic redshifts
-    speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SpARCS0035_final.fits"
-    #speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SpARCS0035_oned.fits"
+    speczcat = "/Users/grudnick/Work/GOGREEN/Data/Spectroscopy/v0.3/SpARCS1033_final.fits"
 
-    return gg_dat, ref_dat, catgogreen, refcat, zcat_dat, zcat, speczcat;
+    return gg_dat, ref_dat, catgogreen, refcat, speczcat;
 
-# def preimage_read(clustname):
-
-#     '''
-#     Read in the correct preimage using the GOGREEN.fits file.
-
-#     INPUT PARAMETERS:
-
-#     clustname: the name of the cluster that is used in the GOGREEN.fits file
-
-#     OUTPUT
-
-#     the name and path of the fits image.
-    
-#     '''
-#     configpath = '/Users/grudnick/Work/GOGREEN/Repo/gogreen/config/GOGREEN.fits'
-    
-#     info_hdul = fits.open(configpath)
-#     info_dat = info_hdul[1].data
-
-#     i = np.where(info_dat['cluster'] == clustname)
-#     imdir = '/Users/grudnick/Work/GOGREEN/Data/Preimaging/' + clustname + '/GMOS/Z/'
-#     imroot = info_dat['z_image'][i[0]]
-#     imroot = imroot[0]
-#     imname = imroot + '.fits[1]'
-#     impath = imdir + imname
-
-#     return impath
