@@ -11,3 +11,5 @@ The southern clusters, i.e. SpARCS0035, SpARCS0219, SpARCS0335, SPT2106, SPT0546
 The norther clusters, i.e. SpARCS1033, SpARCS1034, SpARCS1051, SpARCS1616, SpARCS1634, SpARCS1638 are transformed using reference coordinates from GAIA.
 
 If run in ipython, it is important to run this without the --pylab command.  For some reason the code crashes if matplotlib.pyplot is imported before geomap is run for the first time.  
+
+To run this also requires the code at https://github.com/grudnick/Catalog_code
